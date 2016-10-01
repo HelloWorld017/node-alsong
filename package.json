@@ -1,0 +1,26 @@
+{
+  "name": "alsong",
+  "version": "1.0.0",
+  "description": "An alsong lyric finder for node",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HelloWorld017/node-alsong.git"
+  },
+  "keywords": [
+    "alsong"
+  ],
+  "author": "Khinenw <deu07115@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/HelloWorld017/node-alsong/issues"
+  },
+  "homepage": "https://github.com/HelloWorld017/node-alsong#readme",
+  "dependencies": {
+    "request-promise": "^4.1.1",
+    "xml2js": "^0.4.17"
+  }
+}
