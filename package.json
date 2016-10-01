@@ -11,7 +11,8 @@
     "url": "git+https://github.com/HelloWorld017/node-alsong.git"
   },
   "keywords": [
-    "alsong"
+    "alsong",
+    "lyric"
   ],
   "author": "Khinenw <deu07115@gmail.com>",
   "license": "MIT",

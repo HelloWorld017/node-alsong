@@ -36,7 +36,7 @@ alsong(require('fs').createReadStream('./evans.mp3')).then((v) => {
 });
 ```
 
-### `alsong(stream [, parseLyric (Default: true)])`
+### `alsong(buffer [, parseLyric (Default: true)])`
 Finds lyrics by buffer of music file.
 Returns promise which resolves lyrics.
 
