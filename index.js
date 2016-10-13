@@ -1,6 +1,7 @@
 var crypto = require('crypto');
 var fs = require('fs');
 var parseString = require('xml2js').parseString;
+var Promise = require('bluebird');
 var stream = require('stream');
 var request = require('request-promise').defaults({
 	'method': 'POST',
@@ -130,9 +131,12 @@ var getResembleLyric2 = function(artist, title, parseLyric){
 	});
 };
 
-var getLyric8 = function(buffer, parseLyric){
+var getLyric8 = function(hash, parseLyric){
+	if(typeof hash !== 'string' && hash instanceof Buffer)
+		hash = crypto.createHash('md5').update(hash).digest('hex');
+
 	return new Promise(function(resolve, reject){
-		request(createLyric8(crypto.createHash('md5').update(buffer).digest('hex'))).then(function(body){
+		request(createLyric8(hash)).then(function(body){
 			return parseBody("GetLyric8", body, parseLyric);
 		}).then(function(result){
 			resolve(result);
@@ -142,7 +146,7 @@ var getLyric8 = function(buffer, parseLyric){
 	});
 };
 
-var getLyricFromStream = function(stream, parseLyric){
+var getHashFromStream = function(stream){
 	return new Promise(function(resolve, reject){
 		var hasID3 = undefined;
 		var ID3len = 0;
@@ -164,10 +168,8 @@ var getLyricFromStream = function(stream, parseLyric){
 
 			if(buffer.length > ID3len + 163840){
 				finished = true;
-				getLyric8(buffer.slice(ID3len, 163840 + ID3len), parseLyric).then(function(v){
-					buffer = undefined;
-					resolve(v);
-				});
+				buffer = undefined;
+				resolve(crypto.createHash('md5').update(buffer.slice(ID3len, 163840 + ID3len)).digest('hex'));
 			}
 		});
 
@@ -178,10 +180,8 @@ var getLyricFromStream = function(stream, parseLyric){
 				return;
 			}
 
-			getLyric8(buffer.slice(ID3len, Math.min(163840 + ID3len, buffer.length)), parseLyric).then(function(v){
-				buffer = undefined;
-				resolve(v);
-			});
+			buffer = undefined;
+			resolve(crypto.createHash('md5').update(buffer.slice(ID3len, 163840 + ID3len)).digest('hex'));
 		});
 
 		stream.on('error', function(err){
@@ -191,16 +191,39 @@ var getLyricFromStream = function(stream, parseLyric){
 	});
 };
 
-var getLyricFromBuffer = function(buffer, parseLyric){
-	var len = 0;
-	if(buffer.slice(0, 3).toString() === 'ID3'){
-		var buf = buffer.slice(6, 10);
-		len = buf[0] << 21 | buf[1] << 14 | buf[2] << 7 | buf[3] + 10;
-	}
-	return getLyric8(buffer.slice(len, 163840 + len), parseLyric);
+var getLyricFromStream = function(stream, parseLyric){
+	return new Promise(function(resolve, reject){
+		getHashFromStream(stream).then(function(hash){
+			resolve(getLyric8(hash, parseLyric));
+		}).catch(function(err){
+			reject(err);
+		});
+	});
 };
 
-module.exports = function(){
+var getHashFromBuffer = function(buffer){
+	return new Promise(function(resolve, reject){
+		var len = 0;
+		if(buffer.slice(0, 3).toString() === 'ID3'){
+			var buf = buffer.slice(6, 10);
+			len = buf[0] << 21 | buf[1] << 14 | buf[2] << 7 | buf[3] + 10;
+		}
+
+		resolve(crypto.createHash('md5').update(buffer.slice(len, 163840 + len)).digest('hex'));
+	});
+};
+
+var getLyricFromBuffer = function(buffer, parseLyric){
+	return new Promise(function(resolve, reject){
+		getHashFromBuffer(buffer).then(function(hash){
+			resolve(getLyric8(hash, parseLyric);
+		}).catch(function(err){
+			reject(err);
+		});
+	});
+};
+
+var Alsong = function(){
 	if(arguments.length >= 2 && typeof arguments[0] === 'string' && typeof arguments[1] === 'string'){
 		return getResembleLyric2(arguments[0], arguments[1], arguments[2]);
 	}
@@ -219,3 +242,21 @@ module.exports = function(){
 		return getLyricFromBuffer(arguments[0], arguments[1]);
 	}
 };
+
+Alsong.getHash = function(){
+	if(arguments.length < 1) throw new Error("Wrong arguments!");
+
+	if(typeof arguments[0] === 'string'){
+		return getHashFromStream(fs.createReadStream(arguments[0]));
+	}
+
+	if(arguments[0] instanceof stream){
+		return getHashFromStream(arguments[0]);
+	}
+
+	if(arguments[0] instanceof Buffer){
+		return getHashFromBuffer(arguments[0]);
+	}
+};
+
+module.exports = Alsong;

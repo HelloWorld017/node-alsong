@@ -4,7 +4,7 @@ An alsong lyric finder for node.
 ## Usage
 ### `alsong(artist, title [, parseLyric (Default: true)])`
 Finds lyric by artist and title.
-Returns promise which resolves **array of** lyrics.
+Returns a promise which resolves **array of** lyrics.
 
 Example:
 ```js
@@ -16,7 +16,7 @@ alsong('ClariS', 'irony').then((v) => {
 
 ### `alsong(file [, parseLyric (Default: true)])`
 Finds lyric by location of file.
-Returns promise which resolves lyrics.
+Returns a promise which resolves lyrics.
 
 Example:
 ```js
@@ -27,7 +27,7 @@ alsong('./only my railgun.mp3').then((v) => {
 
 ### `alsong(stream [, parseLyric (Default: true)])`
 Finds lyrics by stream of music file.
-Returns promise which resolves lyrics.
+Returns a promise which resolves lyrics.
 
 Example:
 ```js
@@ -38,22 +38,26 @@ alsong(require('fs').createReadStream('./evans.mp3')).then((v) => {
 
 ### `alsong(buffer [, parseLyric (Default: true)])`
 Finds lyrics by buffer of music file.
-Returns promise which resolves lyrics.
+Returns a promise which resolves lyrics.
 
 Example:
 ```js
-alsong(require('fs').readFileSync('./kimi_ga_shiranai_monogatari.mp3')).then((v) => {
+alsong(require('fs').readFileSync('./kimi_no_shiranai_monogatari.mp3')).then((v) => {
 	console.log(v);
 });
 ```
 
+### `alsong.getHash(music)`
+Gets lyric hash by buffer, stream, or a file.
+Returns a promise which resolves the hash.
+
 ## Example Lyric Object
-```
+```js
 {
 	strInfoID: '7241381',
 	strOnlyLyricWord: '0',
 	strTitle: 'STEP',
-	strLyric: '[00:14.40]君に謳い　聴かせたいこと<br>(...),
+	strLyric: '[00:14.40]君に謳い　聴かせたいこと<br>(...)',
 	strArtistName: 'ClariS',
 	strAlbumName: 'STEP',
 	strRegisterFirstName: '오재령',
