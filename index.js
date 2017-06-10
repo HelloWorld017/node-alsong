@@ -216,7 +216,7 @@ var getHashFromBuffer = function(buffer){
 var getLyricFromBuffer = function(buffer, parseLyric){
 	return new Promise(function(resolve, reject){
 		getHashFromBuffer(buffer).then(function(hash){
-			resolve(getLyric8(hash, parseLyric);
+			resolve(getLyric8(hash, parseLyric));
 		}).catch(function(err){
 			reject(err);
 		});
