@@ -1,9 +1,10 @@
-var crypto = require('crypto');
-var fs = require('fs');
-var parseString = require('xml2js').parseString;
-var Promise = require('bluebird');
-var stream = require('stream');
-var request = require('request-promise').defaults({
+const crypto = require('crypto');
+const escapeHtml = require('escape-html');
+const fs = require('fs');
+const {parseString} = require('xml2js');
+const {promisify} = require('util');
+const stream = require('stream');
+const request = require('request-promise-native').defaults({
 	'method': 'POST',
 	'headers': {
 		'Accept-Charset': 'utf-8',
@@ -12,251 +13,230 @@ var request = require('request-promise').defaults({
 	}
 });
 
-var ALSONG_URL = "http://lyrics.alsong.co.kr/alsongwebservice/service1.asmx";
+const ALSONG_URL = "http://lyrics.alsong.co.kr/alsongwebservice/service1.asmx";
 
-var createResembleLyric2 = function(artist, title){
+const createResembleLyric2 = (artist, title) => {
 	return {
 		'uri': ALSONG_URL,
-		'body': '<?xml version="1.0" encoding="utf-8"?>' +
-			'<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">' +
-				'<soap12:Body>' +
-					'<GetResembleLyric2 xmlns="ALSongWebServer">' +
-						//'<encData></encData>' +
-						'<stQuery>' +
-							'<strTitle>' + title + '</strTitle>' +
-							'<strArtistName>' + artist + '</strArtistName>' +
-							'<nCurPage>0</nCurPage>' +
-						'</stQuery>' +
-					'</GetResembleLyric2>' +
-				'</soap12:Body>' +
-			'</soap12:Envelope>',
+		'body': `<?xml version="1.0" encoding="utf-8"?>
+			<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://www.w3.org/2003/05/soap-envelope">
+				<soap:Body>
+					<GetResembleLyric2 xmlns="ALSongWebServer">
+						<stQuery>
+							<strTitle>${escapeHtml(title)}</strTitle>
+							<strArtistName>${escapeHtml(artist)}</strArtistName>
+							<nCurPage>0</nCurPage>
+						</stQuery>
+					</GetResembleLyric2>
+				</soap:Body>
+			</soap:Envelope>`,
 		'headers': {
 			'SOAPAction': 'AlsongWebServer/GetResembleLyric2'
 		}
 	};
 };
 
-var createLyric8 = function(checksum){
+const createLyric8 = checksum => {
 	return {
 		'uri': ALSONG_URL,
-		'body': '<?xml version="1.0" encoding="utf-8"?>' +
-			'<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">' +
-				'<soap12:Body>' +
-					'<GetLyric8 xmlns="ALSongWebServer">' +
-						'<encData></encData>' +
-						'<stQuery>' +
-							'<strChecksum>' + checksum + '</strChecksum>' +
-							'<strVersion></strVersion>' +
-							'<strMACAddress></strMACAddress>' +
-							'<strIPAddress></strIPAddress>' +
-						'</stQuery>' +
-					'</GetLyric8>' +
-				'</soap12:Body>' +
-			'</soap12:Envelope>',
+		'body': `<?xml version="1.0" encoding="utf-8"?>
+			<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://www.w3.org/2003/05/soap-envelope">
+				<soap:Body>
+					<GetLyric8 xmlns="ALSongWebServer">
+						<encData></encData>
+						<stQuery>
+							<strChecksum>${checksum}</strChecksum>
+							<strVersion></strVersion>
+							<strMACAddress></strMACAddress>
+							<strIPAddress></strIPAddress>
+						</stQuery>
+					</GetLyric8>
+				</soap:Body>
+			</soap:Envelope>`,
 		'headers': {
 			'SOAPAction': 'AlsongWebServer/GetLyric8'
 		}
 	};
 };
 
-var parseLyricStr = function(lyricStr){
-	var lyrics = {};
-	lyricStr.split('<br>').forEach(function(v){
-		var match = v.match(/^\[(\d+):(\d\d).(\d\d)\](.*)$/);
-		if(!match) return;
-		var timestamp = 10 * (parseInt(match[1]) * 60 * 100 + parseInt(match[2]) * 100 + parseInt(match[3]));
+const parseLyricStr = lyricStr => {
+	const lyrics = {};
+
+	lyricStr.split('<br>').forEach(v => {
+		const match = v.match(/^\[(\d+):(\d\d).(\d\d)\](.*)$/);
+		if (!match) return;
+
+		const timestamp = 10 * (parseInt(match[1]) * 60 * 100 + parseInt(match[2]) * 100 + parseInt(match[3]));
 		if(!lyrics[timestamp]) lyrics[timestamp] = [];
+
 		lyrics[timestamp].push(match[4]);
 	});
 
 	return lyrics;
 };
 
-var parseBody = function(methodName, body, parseLyric){
-	return new Promise(function(resolve, reject){
-		parseString(body, function(err, data){
-			if(err){
-				reject(err);
-				return;
-			}
+const parseBody = async (methodName, body, parseLyric) => {
+	const data = await promisify(parseString)(body);
+	let result;
 
-			try{
-				var result = data["soap:Envelope"]["soap:Body"][0][methodName + "Response"][0][methodName + "Result"][0];
-			}catch(err){
-				reject(new Error("Wrong response from server."));
-				return;
-			}
+	try {
+		result = data["soap:Envelope"]["soap:Body"][0][methodName + "Response"][0][methodName + "Result"][0];
+	} catch(err) {
+		reject(new Error("Wrong response from server."));
+		return;
+	}
 
-			if(parseLyric || parseLyric === undefined){
-				var _result = {};
-				Object.keys(result).forEach(function(k){
-					_result[k] = result[k][0];
-				});
-
-				_result.lyric = parseLyricStr(_result.strLyric);
-				resolve(_result);
-				return;
-			}
-			resolve(result);
+	if(parseLyric) {
+		const _result = {};
+		Object.keys(result).forEach(k => {
+			_result[k] = result[k][0];
 		});
-	});
+
+		_result.lyric = parseLyricStr(_result.strLyric);
+		return _result;
+	}
+
+	return result;
 };
 
 //GetResembleLyric3 does not working
-var getResembleLyric2 = function(artist, title, parseLyric){
-	return new Promise(function(resolve, reject){
-		request(createResembleLyric2(artist, title)).then(function(body){
-			return parseBody("GetResembleLyric2", body, false);
-		}).then(function(result){
-			if(parseLyric || parseLyric === undefined){
-				var _results = [];
-				if(result["ST_GET_RESEMBLELYRIC2_RETURN"]){
-					result["ST_GET_RESEMBLELYRIC2_RETURN"].forEach(function(v){
-						var _result = {};
-						Object.keys(v).forEach(function(k){
-							_result[k] = v[k][0];
-						});
+const getResembleLyric2 = async (artist, title, parseLyric = true) => {
+	const body = await request(createResembleLyric2(artist, title));
+	const result = await parseBody("GetResembleLyric2", body, false);
 
-						_result.lyric = parseLyricStr(_result.strLyric);
-						_results.push(_result);
-					});
-				}
-				resolve(_results);
-				return;
-			}
-			resolve(result);
-		}).catch(function(err){
-			reject(err);
-		});
-	});
+	console.log(body);
+	if(parseLyric) {
+		return;
+		const _results = [];
+
+		if(result["ST_GET_RESEMBLELYRIC2_RETURN"]) {
+			result["ST_GET_RESEMBLELYRIC2_RETURN"].forEach(v => {
+				const _result = {};
+				Object.keys(v).forEach(function(k){
+					_result[k] = v[k][0];
+				});
+
+				_result.lyric = parseLyricStr(_result.strLyric);
+				_results.push(_result);
+			});
+		}
+
+		return _results;
+	}
+
+	return result;
 };
 
-var getLyric8 = function(hash, parseLyric){
+const getLyric8 = async (hash, parseLyric) => {
 	if(typeof hash !== 'string' && hash instanceof Buffer)
 		hash = crypto.createHash('md5').update(hash).digest('hex');
 
-	return new Promise(function(resolve, reject){
-		request(createLyric8(hash)).then(function(body){
-			return parseBody("GetLyric8", body, parseLyric);
-		}).then(function(result){
-			resolve(result);
-		}).catch(function(err){
-			reject(err);
-		});
-	});
+	const body = await request(createLyric8(hash));
+	return await parseBody("GetLyric8", body, parseLyric);
 };
 
-var getHashFromStream = function(stream){
-	return new Promise(function(resolve, reject){
-		var hasID3 = undefined;
-		var ID3len = 0;
-		var buffer = Buffer.allocUnsafe(0);
-		var finished = false;
+const getHashFromStream = stream => new Promise((resolve, reject) => {
+	let hasID3 = undefined;
+	let ID3len = 0;
+	let buffer = Buffer.allocUnsafe(0);
+	let finished = false;
 
-		stream.on('data', function(chunk){
-			if(finished) return;
-			buffer = Buffer.concat([buffer, chunk]);
-			if(hasID3 === undefined){
-				if(buffer.length >= 10){
-					hasID3 = buffer.slice(0, 3).toString() === 'ID3';
-					if(hasID3){
-						var buf = buffer.slice(6, 10);
-						ID3len = buf[0] << 21 | buf[1] << 14 | buf[2] << 7 | buf[3] + 10;
-					}
-				}else return;
-			}
+	stream.on('data', chunk => {
+		if(finished) return;
 
-			if(buffer.length > ID3len + 163840){
-				finished = true;
-				buffer = undefined;
-				resolve(crypto.createHash('md5').update(buffer.slice(ID3len, 163840 + ID3len)).digest('hex'));
-			}
-		});
-
-		stream.on('end', function(){
-			if(finished) return;
-			if(hasID3 === undefined){
-				reject(new Error("Stream stopped!"));
-				return;
-			}
-
-			buffer = undefined;
-			resolve(crypto.createHash('md5').update(buffer.slice(ID3len, 163840 + ID3len)).digest('hex'));
-		});
-
-		stream.on('error', function(err){
-			buffer = undefined;
-			reject(err);
-		});
-	});
-};
-
-var getLyricFromStream = function(stream, parseLyric){
-	return new Promise(function(resolve, reject){
-		getHashFromStream(stream).then(function(hash){
-			resolve(getLyric8(hash, parseLyric));
-		}).catch(function(err){
-			reject(err);
-		});
-	});
-};
-
-var getHashFromBuffer = function(buffer){
-	return new Promise(function(resolve, reject){
-		var len = 0;
-		if(buffer.slice(0, 3).toString() === 'ID3'){
-			var buf = buffer.slice(6, 10);
-			len = buf[0] << 21 | buf[1] << 14 | buf[2] << 7 | buf[3] + 10;
+		buffer = Buffer.concat([buffer, chunk]);
+		if(hasID3 === undefined){
+			if(buffer.length >= 10){
+				hasID3 = buffer.slice(0, 3).toString() === 'ID3';
+				if(hasID3){
+					var buf = buffer.slice(6, 10);
+					ID3len = buf[0] << 21 | buf[1] << 14 | buf[2] << 7 | buf[3] + 10;
+				}
+			} else return;
 		}
 
-		resolve(crypto.createHash('md5').update(buffer.slice(len, 163840 + len)).digest('hex'));
+		if(buffer.length > ID3len + 163840){
+			finished = true;
+
+			resolve(crypto.createHash('md5').update(buffer.slice(ID3len, 163840 + ID3len)).digest('hex'));
+			stream.destroy();
+			buffer = undefined;
+		}
 	});
-};
 
-var getLyricFromBuffer = function(buffer, parseLyric){
-	return new Promise(function(resolve, reject){
-		getHashFromBuffer(buffer).then(function(hash){
-			resolve(getLyric8(hash, parseLyric);
-		}).catch(function(err){
-			reject(err);
-		});
+	stream.on('end', () => {
+		if(finished) return;
+		if(hasID3 === undefined){
+			reject(new Error("Stream stopped!"));
+			return;
+		}
+
+		resolve(crypto.createHash('md5').update(buffer.slice(ID3len, 163840 + ID3len)).digest('hex'));
+		buffer = undefined;
 	});
+
+	stream.on('error', err => {
+		if(finished) return;
+
+		buffer = undefined;
+		reject(err);
+	});
+});
+
+const getLyricFromStream = async (stream, parseLyric = true) => {
+	const hash = await getHashFromStream(stream);
+	return await getLyric8(hash, parseLyric);
 };
 
-var Alsong = function(){
-	if(arguments.length >= 2 && typeof arguments[0] === 'string' && typeof arguments[1] === 'string'){
-		return getResembleLyric2(arguments[0], arguments[1], arguments[2]);
+const getHashFromBuffer = buffer => {
+	const len = 0;
+	if(buffer.slice(0, 3).toString() === 'ID3'){
+		const buf = buffer.slice(6, 10);
+		len = buf[0] << 21 | buf[1] << 14 | buf[2] << 7 | buf[3] + 10;
 	}
 
-	if(arguments.length < 1) throw new Error("Wrong arguments!");
+	return crypto.createHash('md5').update(buffer.slice(len, 163840 + len)).digest('hex');
+};
 
-	if(typeof arguments[0] === 'string'){
-		return getLyricFromStream(fs.createReadStream(arguments[0]), arguments[1]);
+const getLyricFromBuffer = async (buffer, parseLyric = true) => {
+	const hash = await getHashFromBuffer(buffer);
+	return await getLyric8(hash, parseLyric);
+};
+
+const Alsong = (...args) => {
+	if(args.length >= 2 && typeof args[0] === 'string' && typeof args[1] === 'string'){
+		return getResembleLyric2(args[0], args[1], args[2]);
 	}
 
-	if(arguments[0] instanceof stream){
-		return getLyricFromStream(arguments[0], arguments[1]);
+	if(args.length < 1) throw new Error("Wrong arguments!");
+
+	if(typeof args[0] === 'string'){
+		return getLyricFromStream(fs.createReadStream(...args));
 	}
 
-	if(arguments[0] instanceof Buffer){
-		return getLyricFromBuffer(arguments[0], arguments[1]);
+	if(args[0] instanceof stream){
+		return getLyricFromStream(...args);
+	}
+
+	if(args[0] instanceof Buffer){
+		return getLyricFromBuffer(...args);
 	}
 };
 
-Alsong.getHash = function(){
-	if(arguments.length < 1) throw new Error("Wrong arguments!");
-
-	if(typeof arguments[0] === 'string'){
-		return getHashFromStream(fs.createReadStream(arguments[0]));
+Alsong.getHash = data => {
+	if(typeof data === 'string'){
+		return getHashFromStream(fs.createReadStream(data));
 	}
 
-	if(arguments[0] instanceof stream){
-		return getHashFromStream(arguments[0]);
+	if(data instanceof stream){
+		return getHashFromStream(data);
 	}
 
-	if(arguments[0] instanceof Buffer){
-		return getHashFromBuffer(arguments[0]);
+	if(data instanceof Buffer){
+		return getHashFromBuffer(data);
 	}
+
+	throw new Error("Wrong arguments!");
 };
 
 module.exports = Alsong;
