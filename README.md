@@ -2,20 +2,28 @@
 An alsong lyric finder for node.
 
 ## Usage
-### `alsong(artist, title [, parseLyric (Default: true)])`
+### `alsong(artist, title [, option ])`
 Finds lyric by artist and title.
 Returns a promise which resolves **array of** lyrics.
 
 Example:
 ```js
-var alsong = require('alsong');
+const alsong = require('alsong');
 alsong('ClariS', 'irony').then((v) => {
 	console.log(v[0]);
 });
 ```
 
-### `alsong(file [, parseLyric (Default: true)])`
-Finds lyric by location of file.
+Option:
+```js
+{
+	skipParse: false,	// If it is true, it will not parse the lyric, and fields of xml response
+	page: 0
+}
+```
+
+### `alsong(music [, option ])`
+Finds lyric by stream, buffer, or music.
 Returns a promise which resolves lyrics.
 
 Example:
@@ -23,29 +31,23 @@ Example:
 alsong('./only my railgun.mp3').then((v) => {
 	console.log(v);
 });
-```
 
-### `alsong(stream [, parseLyric (Default: true)])`
-Finds lyrics by stream of music file.
-Returns a promise which resolves lyrics.
-
-Example:
-```js
-alsong(require('fs').createReadStream('./evans.mp3')).then((v) => {
-	console.log(v);
-});
-```
-
-### `alsong(buffer [, parseLyric (Default: true)])`
-Finds lyrics by buffer of music file.
-Returns a promise which resolves lyrics.
-
-Example:
-```js
 alsong(require('fs').readFileSync('./kimi_no_shiranai_monogatari.mp3')).then((v) => {
 	console.log(v);
 });
+
+alsong(require('fs').createReadStream('./キズナミュージック.mp3')).then((v) => {
+	console.log(v);
+});
 ```
+
+Option:
+```js
+{
+	skipParse: false
+}
+```
+
 
 ### `alsong.getHash(music)`
 Gets lyric hash by buffer, stream, or a file.
