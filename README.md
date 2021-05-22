@@ -51,7 +51,7 @@ Returns a promise which resolves array of lyric items.
 #### Returns
 ```
 Promise<{
-   	lyricId: number,
+	lyricId: number,
 	playtime: number,
 	title: string,
 	artist: string,
