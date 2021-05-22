@@ -57,9 +57,13 @@ const AlsongV2 = {
 	
 	async _getResembleLyricList(artist, title, option = {}) {
 		const page = option.page || 0;
+		const playtime = option.playtime;
 		const params = new URLSearchParams();
 		params.append('title', title);
-		params.append('artist', title);
+		params.append('artist', artist);
+		if (playtime) {
+			params.append('playtime', playtime);
+		}
 		params.append('page', page + 1);
 		params.append('encData', this.getEncData());
 		

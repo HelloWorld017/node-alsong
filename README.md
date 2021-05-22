@@ -43,13 +43,15 @@ Returns a promise which resolves array of lyric items.
 * **title**: `string`  
   Title of the song
 * **option**: `object?`  
+  * **playtime**: `number`
+    The length of the track. (unit: Millisecond)
   * **page**: `number`  
     The desired page of result, starting from zero
 
 #### Returns
 ```
 Promise<{
-	lyricId: number,
+   	lyricId: number,
 	playtime: number,
 	title: string,
 	artist: string,
@@ -62,7 +64,7 @@ Promise<{
 #### Example
 ```js
 const alsong = require('alsong');
-alsong('ClariS', 'irony', { page: 0 })
+alsong('ClariS', 'irony', { page: 0, playtime: 267911 })
 	.then((v) => {
 		console.log(v[0]);
 		/* {
