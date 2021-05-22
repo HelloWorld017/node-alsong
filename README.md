@@ -2,12 +2,12 @@
 An alsong lyric finder for node.
 
 ## Notice
-**From alsong@^3.0.0, most of the API have been changed and may not work with your old code**  
-Please see Migration section for more information
+**From the `alsong@^3.0.0`, most of the API have been changed and may not work with your old code**  
+Please see the Migration section for more information
 
 ## Usage
 ### Lyric Examples
-An example for `Lyric` object is denoted by following:
+An example for the `Lyric` object is denoted by following:
 ```js
 {
 	lyricId: 7241381,
@@ -31,8 +31,10 @@ An example for `Lyric` object is denoted by following:
 }
 ```
 
+----
+
 ### alsong(artist, title [, option ])
-Finds lyric by artist and title.  
+Finds a lyric by artist and title.  
 Returns a promise which resolves array of lyric items.
 
 #### Arguments
@@ -77,8 +79,10 @@ alsong('ClariS', 'irony', { page: 0 })
 	.then(console.log));
 ```
 
+----
+
 ### alsong(music)
-Finds lyric by stream, buffer, or string.  
+Finds a lyric by stream, buffer, or string.  
 Returns a promise which resolves lyrics.
 
 #### Arguments
@@ -96,8 +100,10 @@ const lyric2 = await alsong(fs.readFileSync('./kimi_no_shiranai_monogatari.mp3')
 const lyric3 = await alsong(fs.createReadStream('./キズナミュージック.mp3'));
 ```
 
+----
+
 ### alsong.getHash(music)
-Gets lyric hash by buffer, stream, or a file.  
+Gets the lyric hash of given music by a buffer, stream, or a file.  
 Returns a promise which resolves the hash.
 
 #### Arguments
@@ -114,11 +120,15 @@ console.log(await alsong.getHash('./Bassline yatteru.mp3'));
 // 123456789abcdef123456789abcdef12
 ```
 
+----
+
 ### alsong.getLyric(music)
 An alias for `alsong(music)`
 
+----
+
 ### alsong.getLyricById(id)
-Finds lyric by lyricId.  
+Finds the lyric by lyricId.  
 Returns a promise which resolves lyrics.
 
 #### Arguments
@@ -134,8 +144,10 @@ Returns a promise which resolves lyrics.
 await alsong.getLyricById(9207318);
 ```
 
+----
+
 ### alsong.getLyricByHash(hash)
-Finds lyric by a hash of a music.  
+Finds the lyric by a hash of a music.  
 Returns a promise which resolves lyrics.
 
 #### Arguments
@@ -151,6 +163,8 @@ Returns a promise which resolves lyrics.
 await alsong.getLyricById('123456789abcdef123456789abcdef12');
 ```
 
+----
+
 ### alsong.getLyricListByArtistName(artist, title [, options ])
 An alias for `alsong(artist, title, options)`
 
@@ -164,10 +178,10 @@ Returns API interface for `alsong@1` and `alsong@2`.
 
 #### Arguments
 * **resolver**: `Optional<'v1' | 'v2'>`  
-  If the resolver is `v1`, use the old Alsong API endpoint.  
+  If the resolver is `v1`, it will use the old Alsong API endpoint.  
   Defaults to `v2`, which uses the new Alsong API endpoint, but translates the returned lyric object.
 
-  **WARNING** If you use `'v2'` resolver, it will make N + 1 API requests for `alsong(artist, title[, options ])`.
+  **WARNING** If you use the `'v2'` resolver, it will make N + 1 API requests for `alsong(artist, title[, options ])`.
 
 #### Examples
 ```js
