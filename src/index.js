@@ -16,12 +16,12 @@ class Alsong extends ExtensibleFunction {
 	}
 	
 	async alsong(...args) {
-		if(args.length >= 2 && typeof args[0] === 'string' && typeof args[1] === 'string'){
-			return this.getLyricListByArtistTitle(...args);
-		}
-
 		if(args.length < 1) {
 			throw new Error("Wrong arguments!");
+		}
+		
+		if(args.length >= 2 && typeof args[0] === 'string' && typeof args[1] === 'string'){
+			return this.getLyricListByArtistTitle(...args);
 		}
 		
 		return this.getLyric(...args);
@@ -54,8 +54,16 @@ class AlsongCompat extends Alsong {
 		return item.asLegacy();
 	}
 	
-	async getLyricListByArtistTitle(artist, title, option) {
-		return this._convert(await this._resolver.getResembleLyric(artist, title, option));
+	async alsong(...args) {
+		if(args.length < 1) {
+			throw new Error("Wrong arguments!");
+		}
+		
+		if(args.length >= 2 && typeof args[0] === 'string' && typeof args[1] === 'string'){
+			return this._convert(await this._resolver.getResembleLyric(artist, title, option));
+		}
+		
+		return this.getLyric(...args);
 	}
 }
 
