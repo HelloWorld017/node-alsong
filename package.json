@@ -1,8 +1,8 @@
 {
   "name": "alsong",
-  "version": "2.0.1",
+  "version": "3.0.0",
   "description": "An alsong lyric finder for node",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -23,6 +23,7 @@
   "dependencies": {
     "axios": "^0.21.1",
     "escape-html": "^1.0.3",
+    "node-rsa": "^1.1.1",
     "xml2js": "^0.4.19"
   }
 }
