@@ -1,0 +1,22 @@
+{
+  "name": "alsong",
+  "version": "4.0.0",
+  "description": "Sorry! This repository has been deleted under the request of ESTSoft.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HelloWorld017/node-alsong.git"
+  },
+  "keywords": [
+    "alsong"
+  ],
+  "author": "Khinenw",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/HelloWorld017/node-alsong/issues"
+  },
+  "homepage": "https://github.com/HelloWorld017/node-alsong#readme"
+}
